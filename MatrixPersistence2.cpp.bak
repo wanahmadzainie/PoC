@@ -1,0 +1,108 @@
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <iomanip>
+
+// #include "MatrixPersistence2.h"
+
+// Template function to write a matrix to a file
+template <typename T>
+void write_matrix_cpp(const std::string& filename,
+    const std::vector<std::vector<T>>& matrix) {
+    static_assert(std::is_integral<T>::value,
+        "Matrix type must be integral (short or integer)");
+
+    std::ofstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Error opening file for writing");
+    }
+
+    for (const auto& row : matrix) {
+        for (size_t i = 0; i < row.size(); ++i) {
+            file << static_cast<uint64_t>(row[i]); // Handle all integer types
+            if (i < row.size() - 1) {
+                file << ',';
+            }
+        }
+        file << "]\n"; // Row terminator
+    }
+}
+
+// Template function to read a matrix from a file
+template <typename T>
+std::vector<std::vector<T>> read_matrix_cpp(const std::string& filename) {
+    static_assert(std::is_integral<T>::value,
+        "Matrix type must be integral (short or integer)");
+
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        throw std::runtime_error("Error opening file for reading");
+    }
+
+    std::vector<std::vector<T>> matrix;
+    std::string line;
+
+    while (std::getline(file, line)) {
+        // Skip empty lines
+        if (line.empty()) continue;
+
+        // Check for row terminator
+        if (line.back() != ']') {
+            throw std::runtime_error("Row missing ']' terminator");
+        }
+        line.pop_back(); // Remove the ']' terminator
+
+        std::vector<T> row;
+        std::istringstream ss(line);
+        std::string value_str;
+
+        while (std::getline(ss, value_str, ',')) {
+            try {
+                if constexpr (std::is_unsigned<T>::value) {
+                    // Handle unsigned types
+                    uint64_t value = std::stoull(value_str);
+                    if (value > static_cast<uint64_t>(std::numeric_limits<T>::max())) {
+                        throw std::out_of_range("Value exceeds type limits");
+                    }
+                    row.push_back(static_cast<T>(value));
+                }
+                else {
+                    // Handle signed types (not used but for completeness)
+                    int64_t value = std::stoll(value_str);
+                    if (value < static_cast<int64_t>(std::numeric_limits<T>::min()) ||
+                        value > static_cast<int64_t>(std::numeric_limits<T>::max())) {
+                        throw std::out_of_range("Value exceeds type limits");
+                    }
+                    row.push_back(static_cast<T>(value));
+                }
+            }
+            catch (const std::exception& e) {
+                throw std::runtime_error("Invalid value: " + value_str);
+            }
+        }
+
+        matrix.push_back(row);
+    }
+
+    return matrix;
+}
+
+// Print matrix for verification
+template <typename T>
+void print_matrix_cpp(const std::vector<std::vector<T>>& matrix) {
+    for (const auto& row : matrix) {
+        for (const auto& val : row) {
+            if constexpr (std::is_same_v<T, unsigned short>) {
+                std::cout << std::setw(5) << val << " ";
+            }
+            else {
+                std::cout << std::setw(10) << val << " ";
+            }
+        }
+        std::cout << "\n";
+    }
+}
+

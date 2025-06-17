@@ -1,0 +1,171 @@
+
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
+
+//#include "MatrixPersistence.h"
+#include "common.h"
+#include "MatMul.h"
+
+// Define matrix type (change to unsigned short if needed)
+typedef unsigned int mat_type;
+#define FORMAT_USHORT "%hu"  // Use "%hu" for unsigned short
+#define FORMAT_UINT "%u"  // Use "%hu" for unsigned short
+
+// Write matrix to file
+void write_matrix(const char* filename, Matrix* matrix, int rows, int cols) {
+    FILE* fp = fopen(filename, "a");
+    if (!fp) {
+        perror("Error opening file for writing");
+        exit(EXIT_FAILURE);
+    }
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            if (matrix->matrix_type == MATRIX_TYPE_RESULT) {
+                fprintf(fp, FORMAT_UINT, matrix_get_uint(matrix, i, j));
+            }
+            else if (matrix->matrix_type == MATRIX_TYPE_OPERAND) {
+                fprintf(fp, FORMAT_USHORT, matrix_get_ushort(matrix, i, j));
+            }
+            else {
+                perror("Error opening file for writing");
+                exit(EXIT_FAILURE);
+            }
+
+            if (j < cols - 1) fputc(',', fp);
+        }
+        fputc(']', fp);  // Row separator
+    }
+
+    fclose(fp);
+}
+
+
+// Read matrix from file
+Matrix** read_matrix(const char* filename, int* rows, int* cols) {
+    FILE* fp = fopen(filename, "r");
+    if (!fp) {
+        perror("Error opening file for reading");
+        return nullptr;
+    }
+
+    // Get file size
+    fseek(fp, 0, SEEK_END);
+    long length = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+
+    // Read entire file
+    char* buffer = new char[length + 1];
+    fread(buffer, 1, length, fp);
+    buffer[length] = '\0';
+    fclose(fp);
+
+    // Count rows (number of ']' characters)
+    *rows = 0;
+    for (long i = 0; i < length; ++i) {
+        if (buffer[i] == ']') (*rows)++;
+    }
+
+    if (*rows == 0) {
+        *cols = 0;
+        delete[] buffer;
+        return nullptr;
+    }
+
+    // Split buffer into rows
+    char** row_strings = new char* [*rows];
+    row_strings[0] = buffer;
+    int current_row = 1;
+    for (long i = 0; i < length; ++i) {
+        if (buffer[i] == ']' && current_row < *rows) {
+            buffer[i] = '\0';
+            row_strings[current_row] = buffer + i + 1;
+            current_row++;
+        }
+    }
+
+    // Count columns in first row
+    *cols = 1;
+    char* p = row_strings[0];
+    while (*p) {
+        if (*p == ',') (*cols)++;
+        p++;
+    }
+
+    // Allocate matrix
+    //Matrix** matrix = new Matrix * [*rows];
+	Matrix* matrix = matrix_create(*rows, *cols, MATRIX_TYPE_OPERAND);
+    for (int i = 0; i < *rows; ++i) {
+        matrix[i] = new Matrix[*cols];
+        char* current = row_strings[i];
+
+        for (int j = 0; j < *cols; ++j) {
+            // Find next comma or end
+            char* end = current;
+            while (*end && *end != ',') end++;
+            if (*end) *end = '\0';  // Temporarily terminate
+
+            // Convert to number
+            matrix[i][j] = static_cast<Matrix>(atoi(current));
+            matrix.
+            
+            // Restore and move to next
+            if (*end) {
+                *end = ',';
+                current = end + 1;
+            }
+        }
+    }
+
+    // Cleanup
+    delete[] row_strings;
+    delete[] buffer;
+    return matrix;
+}
+
+// Free matrix memory
+void free_matrix(Matrix** matrix, int rows) {
+    for (int i = 0; i < rows; ++i) {
+        delete[] matrix[i];
+    }
+    delete[] matrix;
+}
+
+//int main() {
+//    // Create sample 2x3 matrix
+//    const int rows = 2;
+//    const int cols = 3;
+//
+//    // Allocate and initialize matrix
+//    mat_type** matrix = new mat_type * [rows];
+//    for (int i = 0; i < rows; ++i) {
+//        matrix[i] = new mat_type[cols];
+//        for (int j = 0; j < cols; ++j) {
+//            matrix[i][j] = i * 10 + j + 1;  // Sample values
+//        }
+//    }
+//
+//    // Write to file
+//    write_matrix("matrix.dat", matrix, rows, cols);
+//    printf("Matrix written to file.\n");
+//
+//    // Read from file
+//    int read_rows, read_cols;
+//    mat_type** read_mat = read_matrix("matrix.dat", &read_rows, &read_cols);
+//
+//    // Print read matrix
+//    printf("\nRead matrix (%d x %d):\n", read_rows, read_cols);
+//    for (int i = 0; i < read_rows; ++i) {
+//        for (int j = 0; j < read_cols; ++j) {
+//            printf(FORMAT_STR " ", read_mat[i][j]);
+//        }
+//        printf("\n");
+//    }
+//
+//    // Cleanup
+//    free_matrix(matrix, rows);
+//    free_matrix(read_mat, read_rows);
+//    return 0;
+//}

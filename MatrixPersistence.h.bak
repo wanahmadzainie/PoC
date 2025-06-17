@@ -1,0 +1,12 @@
+#pragma once
+
+#ifndef MATRIX_PERSISTENCE_H
+#define MATRIX_PERSISTENCE_H
+
+#include "common.h"
+
+void write_matrix(const char* filename, Matrix** matrix, int rows, int cols);
+Matrix** read_matrix(const char* filename, int* rows, int* cols);
+void free_matrix(Matrix** matrix, int rows);
+
+#endif

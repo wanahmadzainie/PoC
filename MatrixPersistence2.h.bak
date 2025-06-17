@@ -1,0 +1,21 @@
+#pragma once
+
+#ifndef MATRIX_PERSISTENCE2_H
+#define MATRIX_PERSISTENCE2_H
+
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <iomanip>
+
+
+
+template <typename T> void write_matrix_cpp(const std::string& filename, const std::vector<std::vector<T>>& matrix);
+template <typename T> std::vector<std::vector<T>> read_matrix_cpp(const std::string& filename);
+template <typename T> void print_matrix_cpp(const std::vector<std::vector<T>>& matrix);
+
+#endif
